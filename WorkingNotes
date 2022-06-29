@@ -1,0 +1,85 @@
+django项目创建步骤：
+#1. 创建app
+    python manage.py startapp student
+#2. settings.py将app加入
+    # settings配置，创建app放入apps目录（python package）并将设置为根目录以及python的资源目录(Source Root)
+    import os.path
+    from pathlib import Path
+    import sys
+
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
+
+    INSTALLED_APPS = [
+        'django.contrib.admin',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
+        'django.contrib.sessions',
+        'django.contrib.messages',
+        'django.contrib.staticfiles',
+        'student',
+    ]
+#3. 然后app关联数据库(初始创建步骤)
+    Step_1: app下创建数据库表类（app目录下的models.py），一个类相当于数据库中一个张表
+        class Student(models.Model): #--->mysql --->studentv3DB --->student
+
+            gender_choices = (('男', '男'), ('女', '女'))
+            sno = models.IntegerField(db_column='SNo', primary_key=True, null=False) #学号-主键，不为空
+            sname = models.CharField(db_column='SName', max_length=20, null=False)
+            gender = models.CharField(db_column='Gender', max_length=20, choices=gender_choices)
+            birthday = models.DateField(db_column='Birthday', null=True)
+            mobile = models.CharField(db_column='Mobile', max_length=50, null=True)
+            email = models.CharField(db_column='Email', max_length=50, null=True)
+            address = models.CharField(db_column='Address', max_length=100, null=True)
+
+            # 原数据
+            class Meta:
+                managed = True # 这个类是否同步到数据库中的表！True-同步关联，False-不同步
+                db_table = 'student' # 定义同步到数据库表的名称，default name：app_class（student_Student）
+
+            # _str_方法: 定义打印格式
+            def __str__(self):
+                return "学号: %s\t姓名：%s"%(self.sno,self.sname)
+
+    Step_2: 准备数据库，SQLyog里面创建一个数据库（studentv4db）
+    Step_3: Settings里面配置与数据库关联
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': 'studentv2db',
+                'HOST': 'localhost',
+                'PORT': 3306,  # The type should be 'int' for current pymysql
+                'USER': 'root',
+                'PASSWORD': 'root',
+                'CHARSET': 'utf8',
+            }
+        }
+    Step_4:
+        app目录下__init__.py里面导入数据库接口(pymysql初始化到对应的app里面)
+        import pymysql
+        pymysql.install_as_MySQLdb()
+
+（*
+#4. 对原有数据库操作（非初始创建： 数据库存在，并且表中有原始数据）
+    python manage.py inspectdb > models.py # 项目的目录下生成对应数据库表格的models.py文件
+#5. 将这个models.py文件托至app下并覆盖app下面原来的models.py文件
+#6. 数据库关联：修改models.py文件中的managed = False => True, True表示与数据库同步关联
+*）
+#7. 将数据库模型(models.py中)生成运行脚本
+    python manage.py makemigrations
+
+（*
+#8. 将上面生成的执行脚本应用和同步到数据库：相当于我们建的类同步到数据库生成对应的表格
+    python manage.py migrate # 多次执行会提示原表已经存在，实际已经关联，可忽略（注：新创建不会提示已经存在）
+*）
+python manage.py showmigrations # 可以看到后台ORM很多模块需要执行和创建
+
+#9. 启动server
+    python manage.py runserver
+
+
+
+Ajax请求数据步骤要点：
+第一步： 后端准备好接口（后端接收请求处理，并返回数据）
+第二步： 然后在前端使用jQury触发Ajax去调用后端接口，并获取数据结果数据
+第三步： 将获取的结果数据更新到页面
